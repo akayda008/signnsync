@@ -1,0 +1,32 @@
+header {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: fixed;
+    top: 0;
+    width: 100%;
+    background: #333;
+    transition: transform 0.3s ease-in-out;
+    z-index: 1000;
+}
+
+#navigation ul {
+    display: flex;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+#navigation li {
+    padding: 0 20px;
+}
+
+#navigation li a {
+    text-decoration: none;
+    color: white;
+}
+
+#navigation li a:hover {
+    color: #17C3B2;
+    text-decoration: underline;
+}

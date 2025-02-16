@@ -1,0 +1,13 @@
+#feature1{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 48px;
+}
+
+#feature2{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 48px;
+}

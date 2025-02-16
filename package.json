@@ -1,0 +1,25 @@
+{
+  "name": "signnsync",
+  "version": "1.0.0",
+  "description": "This is a website for our final year project. The creator of this website is J Akaash, with the help of Baarathi and Avoon.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/akayda008/signnsync.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/akayda008/signnsync/issues"
+  },
+  "homepage": "https://github.com/akayda008/signnsync#readme",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.21.2",
+    "multer": "^1.4.5-lts.1"
+  }
+}
