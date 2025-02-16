@@ -1,0 +1,236 @@
+#landing{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    height: 100vh;
+    font-size: 100px;
+    line-height: 1.2in;
+    /* padding-top:5vh; */
+}
+
+#landing span{
+    padding-left:25px;
+    border-left: 8px black solid;
+    font-family: "DM Serif Display";
+}
+
+#features{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+#features #logo{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 35vw;
+}
+
+#features #solution{
+    display: flex;
+    align-items: center;
+    /* justify-content: center; */
+    width: 65vw;
+    font-size: 40px;
+}
+
+#about{
+    display: flex;
+    align-items: center;
+    flex-direction: column;
+}
+
+#about #heading{
+    height: 10vh;
+    font-size: 8vh;
+    text-decoration: underline;
+}
+
+#about #team{
+    padding-top:5vh;
+    padding-bottom: 5vh;
+    display: flex;
+    justify-content: space-evenly;
+    align-items: center;
+    flex-direction: row;
+}
+
+#about .member{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    width:20vw;
+    height: 60vh;
+    margin: 0 2vw;
+    border: 3px black solid;
+    border-radius: 10px;
+}
+
+#about .image{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height:45vh;
+    width: 20vw;
+    background-color: #235789;
+    border-top-right-radius: 7px;
+    border-top-left-radius: 7px;
+}
+
+#about .content{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    height:15vh;
+    width: 20vw;
+    background-color: #ffffff;
+    border-bottom-right-radius: 7px;
+    border-bottom-left-radius: 7px;
+}
+
+#contact{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    font-size:64px;
+}
+
+#contact #connect{
+    display: flex;
+    align-items: end;
+    justify-content: flex-start;
+    height:41.5vh;
+    width: 65vw;
+    padding-bottom: 1vh;
+    gap:13vw;
+}
+
+#contact #documentation{
+    display: flex;
+    align-items: start;
+    justify-content: flex-start;
+    height:41.5vh;
+    width: 65vw;
+    padding-top: 1vh;
+    gap:4vw;
+}
+
+#connect span, #documentation span{
+    display:flex;
+    align-items: center;
+    justify-content: center;
+}
+
+button {
+    font-size: 24px;
+    height: 60px;
+    width: 10vw;
+    padding: 15px 20px;
+    cursor: pointer;
+    border: none;
+    background-color: #ff7c4d;
+    border-radius: 5px;
+    margin:1vw;
+    border:1px black solid;
+}
+
+button a{
+    text-decoration: none;
+    color: black;
+}
+
+button:hover {
+    background-color: #d24614;
+}
+
+#backToTop {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    padding: 10px 15px;
+    font-size: 24px;
+    background: #17C3B2;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    box-shadow: 0 0 10px rgba(0,0,0,0.2);
+    transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out;
+    opacity: 0;
+    z-index: 1000;
+}
+
+#backToTop:hover {
+    background: #14a096;
+    transform: scale(1.1);
+}
+
+#demo-button {
+    position: fixed;
+    top: 50%;
+    right: -60px;
+    transform: translateY(-50%);
+    z-index: 1000;
+}
+
+#demo-button button {
+    width: 100px;
+    height: 100px;
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    transition: width 0.5s ease, height 0.5s ease, transform 0.5s ease, right 0.5s ease, border-radius 0.5s ease;
+    overflow: hidden;
+    white-space: nowrap;
+    background-color: #f6642f;
+}
+
+/* Hover Effect */
+#demo-button button:hover {
+    width: 200px;
+    height: 50px;
+    right: 0;
+    transform: translateX(-20px) scale(1.2);
+    border-radius: 0%;
+    background-color:#f6642f;
+}
+
+/* Button Text */
+#demo-button .button-text {
+    opacity: 0;
+    color: black;
+    text-decoration: none;
+    transition: opacity 0.2s ease-in 0.5s; 
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px; 
+    font-size: 16px;
+    font-weight: bold;
+}
+
+/* Show text after button fully expands */
+#demo-button button:hover .button-text {
+    opacity: 1;
+    
+}
+
+/* Hide text immediately when hover is removed */
+#demo-button button:not(:hover) .button-text {
+    transition: none;
+    opacity: 0;
+}
+
+#demo-button a{
+    color: black;
+    text-decoration: none;
+}
