@@ -1,13 +1,15 @@
-import cv2
-import numpy as np
 import os
+import numpy as np
+import cv2
 from flask import Blueprint, request, jsonify
-from preprocessing.feature_extract import extract_features_from_frame
-from preprocessing.extract_frames import extract_frames
-from preprocessing.preprocess_image import preprocess_image
+from baara_preprocessing.feature_extract import extract_features # ✅ Corrected Import
+from baara_preprocessing.frame import run_frame_extraction
+from baara_preprocessing.preprocessing_image import preprocess_images
 from model_loader import emotion_model, sign_model
 
 routes = Blueprint("routes", __name__)
+
+TEMP_VIDEO_PATH = "A:/Softwares/laragon/www/signnsync/video/temp_video.mp4"
 
 # ===========================
 # 🔹 EMOTION DETECTION ROUTE (Updated)
@@ -20,41 +22,27 @@ def predict_emotion():
             return jsonify({"error": "No video file received"}), 400
 
         video_file = request.files["video"]
-        
-        # Save video temporarily
-        temp_video_path = "A:/Softwares/laragon/www/signnsync/video/temp_video.mp4"
-        video_file.save(temp_video_path)
-
+        video_file.save(TEMP_VIDEO_PATH)
         print("✅ Video received and saved successfully.")
 
-        # Extract frames from video
-        frames = extract_frames(temp_video_path)
-
-        if not frames:
-            os.remove(temp_video_path)
-            return jsonify({"error": "No frames extracted from video"}), 400
-
-        print(f"📸 Extracted {len(frames)} frames.")
-
-        # Process the first frame for emotion detection
-        frame = frames[0]
-        face, _, _ = extract_features_from_frame(frame)
+        # ✅ Extract features using the new function
+        features = extract_features(TEMP_VIDEO_PATH)
+        face = features.get("face")
 
         if face is None:
-            os.remove(temp_video_path)
-            return jsonify({"error": "No face detected"}), 400
+            os.remove(TEMP_VIDEO_PATH)
+            return jsonify({"error": "No face detected in video"}), 400
 
-        face = preprocess_image(face)
-
-        # Ensure correct input shape
+        # ✅ Preprocess the face
+        face = preprocess_images(face)
         face = np.expand_dims(face, axis=0)  # Add batch dimension
 
-        # Predict
+        # ✅ Predict emotion
         prediction = emotion_model.predict(face)
-        predicted_class = int(np.argmax(prediction, axis=1)[0])
+        final_prediction = np.argmax(prediction, axis=1)[0]
 
-        os.remove(temp_video_path)
-        return jsonify({"emotion": predicted_class})
+        os.remove(TEMP_VIDEO_PATH)
+        return jsonify({"emotion": final_prediction})
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -71,47 +59,35 @@ def predict_sign():
             return jsonify({"error": "No video file received"}), 400
 
         video_file = request.files["video"]
-        
-        # Save video temporarily
-        temp_video_path = "A:/Softwares/laragon/www/signnsync/video/temp_video.mp4"
-        video_file.save(temp_video_path)
-
+        video_file.save(TEMP_VIDEO_PATH)
         print("✅ Video received and saved successfully.")
 
-        # Extract frames from video
-        frames = extract_frames(temp_video_path)
+        # ✅ Extract features
+        features = extract_features(TEMP_VIDEO_PATH)
+        left_hand = features.get("left_hand")
+        right_hand = features.get("right_hand")
 
-        if not frames:
-            os.remove(temp_video_path)
-            return jsonify({"error": "No frames extracted from video"}), 400
+        left_predictions, right_predictions = [], []
 
-        print(f"📸 Extracted {len(frames)} frames.")
-
-        # Process the first frame for sign language recognition
-        frame = frames[0]
-        _, left_hand, right_hand = extract_features_from_frame(frame)
-
-        response = {}
-
-        # If left hand is detected, process it
+        # ✅ Process left hand
         if left_hand is not None:
-            left_hand = preprocess_image(left_hand)
-            left_hand = np.expand_dims(left_hand, axis=0)  # Add batch dimension
-            left_prediction = sign_model.predict(left_hand)
-            response["left_hand"] = int(np.argmax(left_prediction, axis=1)[0])
-        else:
-            response["left_hand"] = "No left hand detected"
+            left_hand = preprocess_images(left_hand)
+            left_hand = np.expand_dims(left_hand, axis=0)
+            left_predictions.append(np.argmax(sign_model.predict(left_hand), axis=1)[0])
 
-        # If right hand is detected, process it
+        # ✅ Process right hand
         if right_hand is not None:
-            right_hand = preprocess_image(right_hand)
-            right_hand = np.expand_dims(right_hand, axis=0)  # Add batch dimension
-            right_prediction = sign_model.predict(right_hand)
-            response["right_hand"] = int(np.argmax(right_prediction, axis=1)[0])
-        else:
-            response["right_hand"] = "No right hand detected"
+            right_hand = preprocess_images(right_hand)
+            right_hand = np.expand_dims(right_hand, axis=0)
+            right_predictions.append(np.argmax(sign_model.predict(right_hand), axis=1)[0])
 
-        os.remove(temp_video_path)
+        os.remove(TEMP_VIDEO_PATH)
+
+        response = {
+            "left_hand": max(set(left_predictions), key=left_predictions.count) if left_predictions else "No left hand detected",
+            "right_hand": max(set(right_predictions), key=right_predictions.count) if right_predictions else "No right hand detected"
+        }
+
         return jsonify(response)
 
     except Exception as e:
@@ -129,56 +105,84 @@ def predict_both():
             return jsonify({"error": "No video file received"}), 400
 
         video_file = request.files["video"]
-        
-        # Save video temporarily
-        temp_video_path = "A:/Softwares/laragon/www/signnsync/video/temp_video.mp4"
-        video_file.save(temp_video_path)
-
+        video_file.save(TEMP_VIDEO_PATH)
         print("✅ Video received and saved successfully.")
 
-        # Extract frames from video
-        frames = extract_frames(temp_video_path)
+        # ✅ Extract features
+        features = extract_features(TEMP_VIDEO_PATH)
+        face = features.get("face")
+        left_hand = features.get("left_hand")
+        right_hand = features.get("right_hand")
 
-        if not frames:
-            os.remove(temp_video_path)
-            return jsonify({"error": "No frames extracted from video"}), 400
+        emotion_predictions, left_predictions, right_predictions = [], [], []
 
-        print(f"📸 Extracted {len(frames)} frames.")
-
-        # Process the first frame for both tasks
-        frame = frames[0]
-        face, left_hand, right_hand = extract_features_from_frame(frame)
-
-        response = {}
-
-        # Emotion Detection
+        # ✅ Process face for emotion detection
         if face is not None:
-            face = preprocess_image(face)
-            face = np.expand_dims(face, axis=0)  # Add batch dimension
-            emotion_prediction = emotion_model.predict(face)
-            response["emotion"] = int(np.argmax(emotion_prediction, axis=1)[0])
-        else:
-            response["emotion"] = "No face detected"
+            face = preprocess_images(face)
+            face = np.expand_dims(face, axis=0)
+            emotion_predictions.append(np.argmax(emotion_model.predict(face), axis=1)[0])
 
-        # Sign Language Recognition (process left hand, right hand, or both)
+        # ✅ Process left hand for sign language
         if left_hand is not None:
-            left_hand = preprocess_image(left_hand)
-            left_hand = np.expand_dims(left_hand, axis=0)  # Add batch dimension
-            left_prediction = sign_model.predict(left_hand)
-            response["left_hand"] = int(np.argmax(left_prediction, axis=1)[0])
-        else:
-            response["left_hand"] = "No left hand detected"
+            left_hand = preprocess_images(left_hand)
+            left_hand = np.expand_dims(left_hand, axis=0)
+            left_predictions.append(np.argmax(sign_model.predict(left_hand), axis=1)[0])
 
+        # ✅ Process right hand for sign language
         if right_hand is not None:
-            right_hand = preprocess_image(right_hand)
-            right_hand = np.expand_dims(right_hand, axis=0)  # Add batch dimension
-            right_prediction = sign_model.predict(right_hand)
-            response["right_hand"] = int(np.argmax(right_prediction, axis=1)[0])
-        else:
-            response["right_hand"] = "No right hand detected"
+            right_hand = preprocess_images(right_hand)
+            right_hand = np.expand_dims(right_hand, axis=0)
+            right_predictions.append(np.argmax(sign_model.predict(right_hand), axis=1)[0])
 
-        os.remove(temp_video_path)
+        os.remove(TEMP_VIDEO_PATH)
+
+        response = {
+            "emotion": max(set(emotion_predictions), key=emotion_predictions.count) if emotion_predictions else "No face detected",
+            "left_hand": max(set(left_predictions), key=left_predictions.count) if left_predictions else "No left hand detected",
+            "right_hand": max(set(right_predictions), key=right_predictions.count) if right_predictions else "No right hand detected"
+        }
+
         return jsonify(response)
 
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+# ===========================
+# 🔹 ADDITIONAL FEATURE EXTRACTION ROUTES
+# ===========================
+
+feature_bp = Blueprint("feature", __name__)
+
+@feature_bp.route("/extract_features", methods=["POST"])
+def feature_extraction():
+    data = request.get_json()
+    input_folder = data.get("input_folder")
+    output_folder = data.get("output_folder")
+
+    if not input_folder or not output_folder:
+        return jsonify({"error": "Both input_folder and output_folder are required"}), 400
+
+    try:
+        extract_features(input_folder, output_folder)
+        return jsonify({"message": "Feature extraction completed successfully!"}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+video_processing = Blueprint("video_processing", __name__)
+
+@video_processing.route("/extract_frames", methods=["POST"])
+def run_frame_extraction_api():
+    base_input = "A:/Christ/Academics/CIA/CS Project/Data/ISL/Trust/Feature_Extract_trust"
+    base_output = "A:/Christ/Academics/CIA/CS Project/Data/ISL/Trust/Frames_trust"
+    run_frame_extraction(base_input, base_output)
+    return jsonify({"message": "Frame extraction completed!"})
+
+@video_processing.route("/preprocess_images", methods=["POST"])
+def preprocess_images_api():
+    try:
+        preprocess_images()
+        return jsonify({"message": "Image preprocessing completed successfully!"})
     except Exception as e:
         return jsonify({"error": str(e)}), 500

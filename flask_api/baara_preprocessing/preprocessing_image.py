@@ -9,9 +9,10 @@ def preprocess_images(input_folder, output_folder, frame_size=(128, 128)):
     - Normalizes pixel values.
     - Saves preprocessed images in the output folder.
 
-    :param input_folder: Folder containing extracted frames (frame_trust_face, frame_trust_left, frame_trust_right).
-    :param output_folder: Folder where preprocessed images will be saved.
-    :param frame_size: Target frame width & height (default: 128x128).
+    Args:
+        input_folder (str): Folder containing extracted frames.
+        output_folder (str): Folder where preprocessed images will be saved.
+        frame_size (tuple): Target frame width & height (default: 128x128).
     """
 
     os.makedirs(output_folder, exist_ok=True)  # Ensure output folder exists
@@ -42,17 +43,15 @@ def preprocess_images(input_folder, output_folder, frame_size=(128, 128)):
 
             print(f"Preprocessed images saved in: {output_subfolder}")
 
-# Define input and output directories
-base_input_folder = r"A:/Christ/Academics/CIA/CS Project/Data/ISL/Trust/Frames_trust"
-base_output_folder = r"A:/Christ/Academics/CIA/CS Project/Data/ISL/Trust/Preprocessed_trust"
+def run_image_preprocessing():
+    """
+    Runs image preprocessing for extracted frames of face, left hand, and right hand.
+    """
+    base_input_folder = r"A:/Christ/Academics/CIA/CS Project/Data/ISL/Trust/Frames_trust"
+    base_output_folder = r"A:/Christ/Academics/CIA/CS Project/Data/ISL/Trust/Preprocessed_trust"
 
-# Process face images
-preprocess_images(os.path.join(base_input_folder, "frame_trust_face"), os.path.join(base_output_folder, "preprocessed_trust_face"))
+    preprocess_images(os.path.join(base_input_folder, "frame_trust_face"), os.path.join(base_output_folder, "preprocessed_trust_face"))
+    preprocess_images(os.path.join(base_input_folder, "frame_trust_left"), os.path.join(base_output_folder, "preprocessed_trust_left"))
+    preprocess_images(os.path.join(base_input_folder, "frame_trust_right"), os.path.join(base_output_folder, "preprocessed_trust_right"))
 
-# Process left-hand images
-preprocess_images(os.path.join(base_input_folder, "frame_trust_left"), os.path.join(base_output_folder, "preprocessed_trust_left"))
-
-# Process right-hand images
-preprocess_images(os.path.join(base_input_folder, "frame_trust_right"), os.path.join(base_output_folder, "preprocessed_trust_right"))
-
-print("All images preprocessed successfully!")
+    print("All images preprocessed successfully!")

@@ -49,17 +49,15 @@ def extract_sharpened_frames(input_folder, output_folder, frame_rate=5):
             cap.release()
             print(f"Processed frames saved in: {video_output_folder}")
 
-# Define input and output directories
-base_input_folder = r"A:/Christ/Academics/CIA/CS Project/Data/ISL/Trust/Feature_Extract_trust"
-base_output_folder = r"A:/Christ/Academics/CIA/CS Project/Data/ISL/Trust/Frames_trust"
+def run_frame_extraction():
+    """
+    Runs frame extraction for face, left hand, and right hand videos.
+    """
+    base_input_folder = r"A:/Christ/Academics/CIA/CS Project/Data/ISL/Trust/Feature_Extract_trust"
+    base_output_folder = r"A:/Christ/Academics/CIA/CS Project/Data/ISL/Trust/Frames_trust"
 
-# Process face videos
-extract_sharpened_frames(os.path.join(base_input_folder, "trust_face"), os.path.join(base_output_folder, "frame_trust_face"))
+    extract_sharpened_frames(os.path.join(base_input_folder, "trust_face"), os.path.join(base_output_folder, "frame_trust_face"))
+    extract_sharpened_frames(os.path.join(base_input_folder, "trust_left"), os.path.join(base_output_folder, "frame_trust_left"))
+    extract_sharpened_frames(os.path.join(base_input_folder, "trust_right"), os.path.join(base_output_folder, "frame_trust_right"))
 
-# Process left-hand videos
-extract_sharpened_frames(os.path.join(base_input_folder, "trust_left"), os.path.join(base_output_folder, "frame_trust_left"))
-
-# Process right-hand videos
-extract_sharpened_frames(os.path.join(base_input_folder, "trust_right"), os.path.join(base_output_folder, "frame_trust_right"))
-
-print("All videos converted to frames successfully!")
+    print("All videos converted to frames successfully!")
