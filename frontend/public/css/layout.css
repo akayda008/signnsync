@@ -6,13 +6,14 @@ html{
 body{
     margin:0;
     padding:0;
-    background-color: #fcd750;
+    background-color:white;
 }
 
 header{
     padding:1vh;
     height: 8vh;
-    background-color:#33171b;
+    /* background-color:#33171b; */
+    background-color: black;
 }
 
 footer{

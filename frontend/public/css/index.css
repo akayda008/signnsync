@@ -2,16 +2,16 @@
     display: flex;
     justify-content: center;
     align-items: center;
-    flex-direction: column;
     height: 100vh;
     font-size: 100px;
     line-height: 1.2in;
     /* padding-top:5vh; */
+    background-color: aquamarine;
 }
 
 #landing span{
-    padding-left:25px;
-    border-left: 8px black solid;
+    /* padding-left:25px; */
+    /* border-left: 8px black solid; */
     font-family: "DM Serif Display";
 }
 
@@ -36,19 +36,21 @@
     font-size: 40px;
 }
 
-#about{
+#about_developers{
     display: flex;
     align-items: center;
     flex-direction: column;
+    background-color: black;
 }
 
-#about #heading{
+#about_developers #heading{
     height: 10vh;
     font-size: 8vh;
     text-decoration: underline;
+    color: white;
 }
 
-#about #team{
+#about_developers #team{
     padding-top:5vh;
     padding-bottom: 5vh;
     display: flex;
@@ -57,7 +59,65 @@
     flex-direction: row;
 }
 
-#about .member{
+#about_developers .member{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    width:20vw;
+    height: 60vh;
+    margin: 0 2vw;
+    border: 3px white solid;
+    border-radius: 10px;
+}
+
+#about_developers .image{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height:45vh;
+    width: 20vw;
+    background-color: #235789;
+    border-top-right-radius: 7px;
+    border-top-left-radius: 7px;
+}
+
+#about_developers .content{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    height:15vh;
+    width: 20vw;
+    background-color: black;
+    color:white;
+    border-bottom-right-radius: 7px;
+    border-bottom-left-radius: 7px;
+}
+
+#about_guides{
+    display: flex;
+    align-items: center;
+    flex-direction: column;
+    background-color: aquamarine;
+}
+
+#about_guides #heading{
+    height: 10vh;
+    font-size: 8vh;
+    text-decoration: underline;
+}
+
+#about_guides #team{
+    padding-top:5vh;
+    padding-bottom: 5vh;
+    display: flex;
+    justify-content: space-evenly;
+    align-items: center;
+    flex-direction: row;
+}
+
+#about_guides .member{
     display: flex;
     align-items: center;
     justify-content: center;
@@ -69,7 +129,7 @@
     border-radius: 10px;
 }
 
-#about .image{
+#about_guides .image{
     display: flex;
     align-items: center;
     justify-content: center;
@@ -80,7 +140,7 @@
     border-top-left-radius: 7px;
 }
 
-#about .content{
+#about_guides .content{
     display: flex;
     justify-content: center;
     align-items: center;
@@ -170,14 +230,16 @@ button:hover {
     transform: scale(1.1);
 }
 
+/* Button Container */
 #demo-button {
     position: fixed;
     top: 50%;
-    right: -60px;
+    right: -60px; /* Half hidden */
     transform: translateY(-50%);
     z-index: 1000;
 }
 
+/* Circular Button */
 #demo-button button {
     width: 100px;
     height: 100px;
@@ -188,49 +250,63 @@ button:hover {
     align-items: center;
     justify-content: center;
     position: relative;
-    transition: width 0.5s ease, height 0.5s ease, transform 0.5s ease, right 0.5s ease, border-radius 0.5s ease;
-    overflow: hidden;
-    white-space: nowrap;
-    background-color: #f6642f;
+    background: conic-gradient(#f6642f, #ffcc00, #f6642f); /* Rotating Gradient */
+    animation: spin 3s linear infinite;
+    transition: transform 0.3s ease, right 0.3s ease;
 }
 
-/* Hover Effect */
-#demo-button button:hover {
-    width: 200px;
-    height: 50px;
+/* Spinning Animation */
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Scale and Slide in on Hover */
+#demo-button:hover button {
+    transform: scale(1.2); /* Scales up */
     right: 0;
-    transform: translateX(-20px) scale(1.2);
-    border-radius: 0%;
-    background-color:#f6642f;
 }
 
-/* Button Text */
-#demo-button .button-text {
-    opacity: 0;
-    color: black;
-    text-decoration: none;
-    transition: opacity 0.2s ease-in 0.5s; 
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 5px; 
-    font-size: 16px;
+/* Hover Box */
+#demo-hover-box {
+    display: none;
+    position: fixed;
+    top: 45%; /* Moved slightly up */
+    right: 100px; /* Further from the button */
+    width: 350px; /* Bigger hover box */
+    height: 250px;
+    background: white;
+    border: 3px solid #f6642f;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    text-align: center;
+    padding: 20px;
+    cursor: pointer;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+    z-index: 1001;
+    opacity: 0; /* Initially hidden */
+}
+
+/* Image inside the hover box */
+#demo-hover-box img {
+    width: 100%;
+    height: auto;
+    border-radius: 10px;
+}
+
+/* Text under image */
+#demo-hover-box p {
+    font-size: 20px;
     font-weight: bold;
+    margin-top: 15px;
+    color: #f6642f;
 }
 
-/* Show text after button fully expands */
-#demo-button button:hover .button-text {
+/* Show Hover Box when button is hovered */
+#demo-button:hover + #demo-hover-box,
+#demo-hover-box:hover {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
     opacity: 1;
-    
-}
-
-/* Hide text immediately when hover is removed */
-#demo-button button:not(:hover) .button-text {
-    transition: none;
-    opacity: 0;
-}
-
-#demo-button a{
-    color: black;
-    text-decoration: none;
+    transform: translateY(-5px);
 }

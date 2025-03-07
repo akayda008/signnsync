@@ -1,13 +1,14 @@
 header {
     display: flex;
-    justify-content: center;
+    justify-content: space-around;
     align-items: center;
     position: fixed;
     top: 0;
     width: 100%;
-    background: #333;
+    /* background: #333; */
     transition: transform 0.3s ease-in-out;
     z-index: 1000;
+    border-bottom: 0.5px rgba(0, 0, 0, 0.5) solid;
 }
 
 #navigation ul {

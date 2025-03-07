@@ -26,19 +26,27 @@
         <div id="content">
             <section>
                 <div id="video-container">
-                    <video id="video" autoplay playsinline></video>
+                    <video id="video" autoplay playsinline muted></video>
                     <canvas id="canvas"></canvas>
-                </div>
-    
-                <div id="controls">
+
+                    <!-- Task Selection Dropdown -->
+                    <label for="select-task">Select Task:</label>
+                    <select id="select-task">
+                        <option value="emotion">Emotion Detection</option>
+                        <option value="sign">Sign Language</option>
+                        <option value="both">Both</option>
+                    </select>
+
+                    <!-- Buttons for different recognition modes -->
                     <button onclick="startSignLanguage()">Sign Language</button>
                     <button onclick="startEmotionRecognition()">Emotion Detection</button>
                     <button onclick="startBoth()">Both</button>
-                </div>
-    
-                <div id="output">
-                    <h2>Output:</h2>
-                    <p id="result">Waiting for input...</p>
+
+                    <!-- Start/Stop Buttons for Video Recording -->
+                    <button id="start-button">Start Recording</button>
+                    <button id="stop-button">Stop Recording</button>
+
+                    <div id="result">Waiting for input...</div>
                 </div>
             </section>
         </div>

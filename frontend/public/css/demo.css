@@ -9,6 +9,11 @@ video {
     border-radius: 10px;
 }
 
+#video {
+    transform: scaleX(-1); /* Flips the video horizontally */
+    -webkit-transform: scaleX(-1); /* For Safari */
+}
+
 canvas {
     display: none;
 }
