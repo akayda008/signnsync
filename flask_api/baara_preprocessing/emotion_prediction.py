@@ -1,77 +1,90 @@
 import os
 import numpy as np
 import tensorflow as tf
-import cv2
-from collections import Counter
-from flask import jsonify
+import json
+from tensorflow.keras.preprocessing import image
 
-# Load trained model
+# ==========================
+# 🔹 Suppress TensorFlow Warnings (Optional)
+# ==========================
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'  # Suppress unnecessary TF logs
+
+# ==========================
+# 🔹 Load Trained Model
+# ==========================
 MODEL_PATH = r"A:/Softwares/laragon/www/signnsync/flask_api/model/emotion_model.h5"
 
 if not os.path.exists(MODEL_PATH):
-    raise FileNotFoundError("❌ Emotion model file not found!")
+    print(json.dumps({"error": "❌ Emotion model file not found! Train and save the model first."}))
+    exit()
 
+# ✅ Load the trained model
 model = tf.keras.models.load_model(MODEL_PATH)
 
-# Emotion labels
-EMOTIONS = ["Angry", "Anticipation", "Disgust", "Fear", "Happy", "Neutral", "Sad", "Surprised", "Trust"]
-
-# Function to preprocess an image
+# ==========================
+# 🔹 Function to Preprocess Image
+# ==========================
 def preprocess_image(img_path, target_size=(64, 64)):
-    """
-    Preprocesses an image:
-    - Loads the image in grayscale
-    - Resizes to target size (64x64)
-    - Normalizes pixel values (0-1)
-
-    :param img_path: Path to image
-    :param target_size: Target size for model input (default: (64,64))
-    :return: Preprocessed image array
-    """
+    """Loads and preprocesses an image for emotion detection."""
     try:
-        img = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE)  # Load as grayscale
-        if img is None:
-            print(f"⚠️ Invalid image: {img_path}")
-            return None  # Skip invalid images
-        
-        img = cv2.resize(img, target_size)  # Resize to match model input size
-        img = np.expand_dims(img, axis=0)  # Add batch dimension
-        img = np.expand_dims(img, axis=-1)  # Add channel dimension
-        img = img / 255.0  # Normalize pixel values
-        return img
+        img = image.load_img(img_path, target_size=target_size, color_mode='grayscale')
+        img_array = image.img_to_array(img)
+        img_array = np.expand_dims(img_array, axis=0) / 255.0  # Normalize
+        return img_array
     except Exception as e:
-        print(f"⚠️ Error processing image {img_path}: {str(e)}")
-        return None
+        return {"error": f"❌ Image preprocessing failed: {str(e)}"}
 
-# Function to predict emotion
-def predict_emotion(preprocessed_folder):
-    """
-    Predicts the dominant emotion based on processed face images.
+# ==========================
+# 🔹 Function to Predict Emotion
+# ==========================
+def predict_emotion():
+    input_folder = r"A:/Softwares/laragon/www/signnsync/interpretation/preprocessed"
+    face_folder = os.path.join(input_folder, "face")
 
-    :param preprocessed_folder: Path to folder containing preprocessed face images
-    :return: JSON response with predicted emotion
-    """
+    if not os.path.exists(face_folder) or not os.listdir(face_folder):
+        return json.dumps({"error": "❌ No preprocessed face frames found!"})
 
-    frame_preds = []
+    emotion_preds = []
 
-    # Validate folder
-    if not os.path.exists(preprocessed_folder) or not os.listdir(preprocessed_folder):
-        return jsonify({"error": "⚠️ No face images found!"})
-
-    for img_name in sorted(os.listdir(preprocessed_folder)):
-        if img_name.endswith((".png", ".jpg", ".jpeg")):  # Process only valid images
-            img_path = os.path.normpath(os.path.join(preprocessed_folder, img_name))
+    try:
+        # ✅ Process frames in sorted order
+        for img_name in sorted(os.listdir(face_folder)):
+            img_path = os.path.join(face_folder, img_name)
             img_array = preprocess_image(img_path)
-            
-            if img_array is not None:
-                pred = model.predict(img_array)
-                frame_preds.append(np.argmax(pred[0]))
 
-    # Get the most common prediction
-    if frame_preds:
-        most_common_pred = Counter(frame_preds).most_common(1)[0][0]
-        predicted_emotion = EMOTIONS[most_common_pred]
-    else:
-        predicted_emotion = "No valid frames found!"
+            if isinstance(img_array, dict) and "error" in img_array:
+                return json.dumps(img_array)  # Return JSON error if preprocessing fails
 
-    return jsonify({"emotion": predicted_emotion})
+            # ✅ Suppress TensorFlow verbose logs
+            tf.get_logger().setLevel("ERROR")
+
+            # ✅ Make prediction
+            emotion_pred = model.predict(img_array, verbose=0)  # Suppressed verbose output
+            emotion_preds.append(np.argmax(emotion_pred))
+
+        # ✅ Ensure at least one prediction is made
+        if not emotion_preds:
+            return json.dumps({"error": "❌ No valid predictions made!"})
+
+        # ✅ Get the most frequent prediction
+        final_emotion_pred = max(set(emotion_preds), key=emotion_preds.count)
+
+        # ✅ Class labels (Modify this if needed)
+        class_labels = ["Angry", "Disgust", "Happy", "Trust", "Surprised", "Fear", "Sad", "Hope", "Neutral"]
+
+        # ✅ Determine final prediction text
+        if 0 <= final_emotion_pred < len(class_labels):
+            prediction_text = class_labels[final_emotion_pred]
+        else:
+            prediction_text = "❌ Unknown emotion detected."
+
+        return json.dumps({"emotion_prediction": prediction_text})
+
+    except Exception as e:
+        return json.dumps({"error": f"⚠️ Prediction error: {str(e)}"})
+
+# ==========================
+# 🔹 Run Prediction
+# ==========================
+if __name__ == "__main__":
+    print(predict_emotion())

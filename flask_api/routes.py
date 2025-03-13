@@ -1,17 +1,15 @@
-import cv2
-import numpy as np
 import os
 import shutil
+import subprocess
+import json
 from flask import Blueprint, request, jsonify
 
-# Importing preprocessing and model prediction functions
+# Importing preprocessing functions
 from baara_preprocessing.feature_extract import extract_features
 from baara_preprocessing.frame import extract_sharpened_frames
 from baara_preprocessing.preprocessing_image import preprocess_images
-from baara_preprocessing.sign_prediction import predict_sign_language
-from baara_preprocessing.emotion_prediction import predict_emotion
 
-# Flask Blueprint for route handling
+# Flask Blueprint for routes
 routes = Blueprint("routes", __name__)
 
 # ==========================
@@ -21,7 +19,7 @@ BASE_PATH = "A:/Softwares/laragon/www/signnsync/interpretation/"
 FEATURE_PATH = os.path.join(BASE_PATH, "feature_extracted")
 FRAME_PATH = os.path.join(BASE_PATH, "frames")
 PREPROCESSED_PATH = os.path.join(BASE_PATH, "preprocessed")
-
+SCRIPT_PATH = "A:/Softwares/laragon/www/signnsync/flask_api/baara_preprocessing"
 
 # ==========================
 # 🔹 FUNCTION TO CLEAR OLD DATA
@@ -36,20 +34,17 @@ def clear_old_data():
 
             for subfolder in ["face", "left_hand", "right_hand"]:
                 os.makedirs(os.path.join(folder, subfolder), exist_ok=True)
+
+        print("✅ Old data cleared successfully.")
     except Exception as e:
         print(f"⚠️ Error clearing old data: {e}")
-
 
 # ==========================
 # 🔹 VIDEO PROCESSING FUNCTION
 # ==========================
 def process_video(video_path):
-    """
-    Extracts features, frames, preprocesses images, and returns extracted file paths.
-    This function ensures that preprocessing can call back `routes.py` for final predictions.
-    """
+    """Extracts features, frames, preprocesses images, and returns extracted file paths."""
     try:
-        # Step 1: Feature Extraction (Face + Hands)
         extract_features(video_path, FEATURE_PATH)
 
         extracted_videos = {
@@ -72,11 +67,46 @@ def process_video(video_path):
                 preprocess_images(frame_folder, output_folder)
                 preprocessed_paths[key] = output_folder
 
+        print("✅ Video processing completed successfully.")
         return preprocessed_paths
 
     except Exception as e:
+        print(f"⚠️ Error processing video: {e}")
         return {"error": str(e)}
 
+# ==========================
+# 🔹 FUNCTION TO RUN PREDICTION SCRIPTS
+# ==========================
+def run_prediction_script(script_name):
+    """Runs a prediction script and returns its JSON output."""
+    script_file = os.path.join(SCRIPT_PATH, script_name)
+    
+    if not os.path.exists(script_file):
+        return {"error": f"❌ Script {script_name} not found at {SCRIPT_PATH}"}
+
+    try:
+        result = subprocess.run(
+            ["python", script_file],
+            cwd=SCRIPT_PATH,  
+            capture_output=True,
+            text=True
+        )
+
+        if result.returncode != 0:
+            print(f"⚠️ Error in {script_name}: {result.stderr.strip()}")
+            return {"error": f"⚠️ Error in {script_name}: {result.stderr.strip()}"}
+
+        try:
+            output = json.loads(result.stdout.strip())
+            print(f"✅ {script_name} Output: {output}")
+            return output
+        except json.JSONDecodeError:
+            print(f"⚠️ Invalid JSON output from {script_name}: {result.stdout.strip()}")
+            return {"error": f"⚠️ Invalid JSON output from {script_name}: {result.stdout.strip()}"}
+
+    except Exception as e:
+        print(f"⚠️ Exception running {script_name}: {str(e)}")
+        return {"error": f"⚠️ Exception running {script_name}: {str(e)}"}
 
 # ==========================
 # 🔹 EMOTION DETECTION ROUTE
@@ -85,7 +115,7 @@ def process_video(video_path):
 def predict_emotion_route():
     try:
         if "video" not in request.files:
-            return jsonify({"error": "No video file received"}), 400
+            return jsonify({"error": "❌ No video file received"}), 400
 
         clear_old_data()
 
@@ -94,40 +124,24 @@ def predict_emotion_route():
         video_file.save(test_path)
 
         if not os.path.exists(test_path):
-            return jsonify({"error": "Failed to save uploaded video"}), 500
+            return jsonify({"error": "❌ Failed to save uploaded video"}), 500
 
-        preprocessed_paths = process_video(test_path)
+        process_video(test_path)
+        emotion_result = run_prediction_script("emotion_prediction.py")
 
-        if "face" not in preprocessed_paths:
-            return jsonify({"error": "Face detection failed"}), 400
-
-        preprocessed_files = sorted(os.listdir(preprocessed_paths["face"]))
-        if not preprocessed_files:
-            return jsonify({"error": "Preprocessing failed for face"}), 400
-
-        frame_path = os.path.join(preprocessed_paths["face"], preprocessed_files[0])
-        frame = cv2.imread(frame_path, cv2.IMREAD_GRAYSCALE)
-        if frame is None:
-            return jsonify({"error": "Invalid preprocessed frame"}), 400
-
-        frame = np.expand_dims(frame, axis=(0, -1))  # Reshape for model
-        prediction = predict_emotion(frame)
-        predicted_emotion = int(np.argmax(prediction, axis=1)[0])
-
-        return jsonify({"emotion": predicted_emotion})
+        return jsonify({"emotion": emotion_result.get("emotion", "No face detected")})
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-
 # ==========================
-# 🔹 SIGN LANGUAGE RECOGNITION ROUTE
+# 🔹 SIGN LANGUAGE DETECTION ROUTE
 # ==========================
 @routes.route("/predict/sign", methods=["POST"])
-def predict_sign():
+def predict_sign_route():
     try:
         if "video" not in request.files:
-            return jsonify({"error": "No video file received"}), 400
+            return jsonify({"error": "❌ No video file received"}), 400
 
         clear_old_data()
 
@@ -136,39 +150,27 @@ def predict_sign():
         video_file.save(test_path)
 
         if not os.path.exists(test_path):
-            return jsonify({"error": "Failed to save uploaded video"}), 500
+            return jsonify({"error": "❌ Failed to save uploaded video"}), 500
 
-        preprocessed_paths = process_video(test_path)
-        response = {}
+        process_video(test_path)
+        sign_result = run_prediction_script("sign_prediction.py")
 
-        for hand in ["left_hand", "right_hand"]:
-            if hand in preprocessed_paths:
-                preprocessed_files = sorted(os.listdir(preprocessed_paths[hand]))
-                if preprocessed_files:
-                    frame_path = os.path.join(preprocessed_paths[hand], preprocessed_files[0])
-                    frame = cv2.imread(frame_path, cv2.IMREAD_GRAYSCALE)
-                    frame = np.expand_dims(frame, axis=(0, -1))
-                    prediction = predict_sign_language(frame)
-                    response[hand] = int(np.argmax(prediction, axis=1)[0])
-                else:
-                    response[hand] = f"Preprocessing failed for {hand}"
-            else:
-                response[hand] = f"No {hand} detected"
-
-        return jsonify(response)
+        return jsonify({
+            "left_hand": sign_result.get("left_hand", "No left hand detected"),
+            "right_hand": sign_result.get("right_hand", "No right hand detected")
+        })
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-
 
 # ==========================
 # 🔹 BOTH (SIGN + EMOTION) ROUTE
 # ==========================
 @routes.route("/predict/both", methods=["POST"])
-def predict_both():
+def predict_both_route():
     try:
         if "video" not in request.files:
-            return jsonify({"error": "No video file received"}), 400
+            return jsonify({"error": "❌ No video file received"}), 400
 
         clear_old_data()
 
@@ -177,41 +179,19 @@ def predict_both():
         video_file.save(test_path)
 
         if not os.path.exists(test_path):
-            return jsonify({"error": "Failed to save uploaded video"}), 500
+            return jsonify({"error": "❌ Failed to save uploaded video"}), 500
 
-        preprocessed_paths = process_video(test_path)
-        response = {}
+        process_video(test_path)
 
-        # Emotion Prediction
-        if "face" in preprocessed_paths:
-            preprocessed_files = sorted(os.listdir(preprocessed_paths["face"]))
-            if preprocessed_files:
-                frame_path = os.path.join(preprocessed_paths["face"], preprocessed_files[0])
-                frame = cv2.imread(frame_path, cv2.IMREAD_GRAYSCALE)
-                frame = np.expand_dims(frame, axis=(0, -1))
-                prediction = predict_emotion(frame)
-                response["emotion"] = int(np.argmax(prediction, axis=1)[0])
-            else:
-                response["emotion"] = "Preprocessing failed for face"
-        else:
-            response["emotion"] = "No face detected"
+        # Run both predictions
+        emotion_result = run_prediction_script("emotion_prediction.py")
+        sign_result = run_prediction_script("sign_prediction.py")
 
-        # Sign Language Prediction
-        for hand in ["left_hand", "right_hand"]:
-            if hand in preprocessed_paths:
-                preprocessed_files = sorted(os.listdir(preprocessed_paths[hand]))
-                if preprocessed_files:
-                    frame_path = os.path.join(preprocessed_paths[hand], preprocessed_files[0])
-                    frame = cv2.imread(frame_path, cv2.IMREAD_GRAYSCALE)
-                    frame = np.expand_dims(frame, axis=(0, -1))
-                    prediction = predict_sign_language(frame)
-                    response[hand] = int(np.argmax(prediction, axis=1)[0])
-                else:
-                    response[hand] = "Preprocessing failed"
-            else:
-                response[hand] = "No hand detected"
-
-        return jsonify(response)
+        return jsonify({
+            "emotion": emotion_result.get("emotion", "No face detected"),
+            "left_hand": sign_result.get("left_hand", "No left hand detected"),
+            "right_hand": sign_result.get("right_hand", "No right hand detected")
+        })
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
