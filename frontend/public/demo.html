@@ -29,18 +29,10 @@
                     <video id="video" autoplay playsinline muted></video>
                     <canvas id="canvas"></canvas>
 
-                    <!-- Task Selection Dropdown -->
-                    <label for="select-task">Select Task:</label>
-                    <select id="select-task">
-                        <option value="emotion">Emotion Detection</option>
-                        <option value="sign">Sign Language</option>
-                        <option value="both">Both</option>
-                    </select>
-
-                    <!-- Buttons for different recognition modes -->
-                    <button onclick="startSignLanguage()">Sign Language</button>
-                    <button onclick="startEmotionRecognition()">Emotion Detection</button>
-                    <button onclick="startBoth()">Both</button>
+                    <!-- Updated buttons to directly select tasks -->
+                    <button onclick="startRecognition('sign')">Sign Language</button>
+                    <button onclick="startRecognition('emotion')">Emotion Detection</button>
+                    <button onclick="startRecognition('both')">Both</button>
 
                     <!-- Start/Stop Buttons for Video Recording -->
                     <button id="start-button">Start Recording</button>

@@ -1,9 +1,14 @@
 import cv2
 import os
+import subprocess  # To call preprocessing_image.py
+import sys
+
+# Ensure preprocess_image.py is in the same directory or adjust the path
+PREPROCESS_SCRIPT_PATH = os.path.join(os.path.dirname(__file__), "preprocessing_image.py")
 
 def extract_sharpened_frames(input_folder, output_folder, frame_rate=5):
     """
-    Extracts frames from all videos in a given folder, applies sharpening, and saves them.
+    Extracts frames from videos in input_folder, applies sharpening, and saves them directly in output_folder.
 
     Args:
         input_folder (str): Directory containing input video files.
@@ -15,49 +20,69 @@ def extract_sharpened_frames(input_folder, output_folder, frame_rate=5):
 
     for video_file in os.listdir(input_folder):
         if video_file.endswith((".mp4", ".avi", ".mov", ".mkv")):
-            video_path = os.path.join(input_folder, video_file)
-            video_name = os.path.splitext(video_file)[0]
-            video_output_folder = os.path.join(output_folder, video_name)
-            
-            os.makedirs(video_output_folder, exist_ok=True)  # Create subfolder for frames
+            video_path = os.path.normpath(os.path.join(input_folder, video_file))
+            video_name = os.path.splitext(video_file)[0]  # Extract name without extension
 
             cap = cv2.VideoCapture(video_path)
-            fps = int(cap.get(cv2.CAP_PROP_FPS))
-            frame_interval = max(1, fps // frame_rate)
+            fps = cap.get(cv2.CAP_PROP_FPS)
 
+            if fps == 0 or not cap.isOpened():
+                print(f"⚠️ Skipping {video_file}: Invalid video file or FPS = 0")
+                cap.release()
+                continue
+
+            frame_interval = max(1, int(fps / frame_rate))  # Corrected frame interval calculation
             frame_count = 0
             saved_count = 0
+
+            print(f"🎥 Processing video: {video_file} ({fps:.2f} FPS, extracting every {frame_interval} frames)")
 
             while cap.isOpened():
                 ret, frame = cap.read()
                 if not ret:
-                    break  
+                    break  # End of video
 
-                # Process only selected frames
+                # Extract 5 frames per second
                 if frame_count % frame_interval == 0:
                     # Apply Sharpening to Reduce Motion Blur
-                    blurred = cv2.GaussianBlur(frame, (5, 5), 0)  
+                    blurred = cv2.GaussianBlur(frame, (5, 5), 0)
                     sharpened = cv2.addWeighted(frame, 1.5, blurred, -0.5, 0)
 
-                    # Save sharpened frame
-                    frame_filename = os.path.join(video_output_folder, f"frame_{saved_count:04d}.jpg")
+                    # Save sharpened frame directly in output_folder
+                    frame_filename = os.path.normpath(os.path.join(output_folder, f"{video_name}_frame_{saved_count:04d}.jpg"))
                     cv2.imwrite(frame_filename, sharpened)
                     saved_count += 1
 
                 frame_count += 1
 
             cap.release()
-            print(f"Processed frames saved in: {video_output_folder}")
+            print(f"✅ {saved_count} frames extracted and saved in: {output_folder}")
 
-def run_frame_extraction():
-    """
-    Runs frame extraction for face, left hand, and right hand videos.
-    """
-    base_input_folder = r"A:/Christ/Academics/CIA/CS Project/Data/ISL/Trust/Feature_Extract_trust"
-    base_output_folder = r"A:/Christ/Academics/CIA/CS Project/Data/ISL/Trust/Frames_trust"
+# 🔹 Define paths
+base_input_folder = r"A:/Softwares/laragon/www/signnsync/interpretation/feature_extracted"
+base_output_folder = r"A:/Softwares/laragon/www/signnsync/interpretation/frames"
 
-    extract_sharpened_frames(os.path.join(base_input_folder, "trust_face"), os.path.join(base_output_folder, "frame_trust_face"))
-    extract_sharpened_frames(os.path.join(base_input_folder, "trust_left"), os.path.join(base_output_folder, "frame_trust_left"))
-    extract_sharpened_frames(os.path.join(base_input_folder, "trust_right"), os.path.join(base_output_folder, "frame_trust_right"))
+# Process face videos
+face_input = os.path.normpath(os.path.join(base_input_folder, "face"))
+face_output = os.path.normpath(os.path.join(base_output_folder, "face"))
+if os.path.exists(face_input):
+    extract_sharpened_frames(face_input, face_output)
 
-    print("All videos converted to frames successfully!")
+# Process left-hand videos
+left_hand_input = os.path.normpath(os.path.join(base_input_folder, "left_hand"))
+left_hand_output = os.path.normpath(os.path.join(base_output_folder, "left_hand"))
+if os.path.exists(left_hand_input):
+    extract_sharpened_frames(left_hand_input, left_hand_output)
+
+# Process right-hand videos
+right_hand_input = os.path.normpath(os.path.join(base_input_folder, "right_hand"))
+right_hand_output = os.path.normpath(os.path.join(base_output_folder, "right_hand"))
+if os.path.exists(right_hand_input):
+    extract_sharpened_frames(right_hand_input, right_hand_output)
+
+print("✅ All feature-extracted videos converted to sharpened frames successfully!")
+
+# 🚀 Call preprocess_image.py to preprocess extracted frames
+print("🔄 Calling preprocess_image.py for preprocessing...")
+subprocess.run([sys.executable, PREPROCESS_SCRIPT_PATH])
+print("✅ Preprocessing completed successfully!")

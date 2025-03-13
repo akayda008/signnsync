@@ -1,10 +1,11 @@
 const video = document.getElementById("video");
 const startButton = document.getElementById("start-button");
 const stopButton = document.getElementById("stop-button");
-const selectTask = document.getElementById("select-task");
 const resultDiv = document.getElementById("result");
+
 let mediaRecorder;
 let recordedChunks = [];
+let taskType = "emotion"; // Default task type
 
 // Start video streaming
 navigator.mediaDevices.getUserMedia({ video: true, audio: false })
@@ -18,10 +19,13 @@ navigator.mediaDevices.getUserMedia({ video: true, audio: false })
             }
         };
 
-        mediaRecorder.onstop = () => {
+        mediaRecorder.onstop = async () => {
             const blob = new Blob(recordedChunks, { type: "video/webm" });
             recordedChunks = [];
-            sendVideoToServer(blob);
+
+            // Convert WebM to MP4 before sending
+            const mp4Blob = await convertWebMToMP4(blob);
+            sendVideoToServer(mp4Blob);
         };
     })
     .catch((error) => {
@@ -32,59 +36,61 @@ navigator.mediaDevices.getUserMedia({ video: true, audio: false })
 startButton.addEventListener("click", () => {
     recordedChunks = [];
     mediaRecorder.start();
-    console.log("🎥 Recording started...");
+    console.log(`🎥 Recording started for: ${taskType}`);
 });
 
 // Stop recording
 stopButton.addEventListener("click", () => {
     mediaRecorder.stop();
-    console.log("🛑 Recording stopped. Sending to server...");
+    console.log(`🛑 Recording stopped. Sending to server for: ${taskType}`);
 });
+
+// Function to set the task type
+function startRecognition(selectedTask) {
+    taskType = selectedTask;
+    console.log(`🔹 Selected Task: ${taskType}`);
+}
+
+// Convert WebM to MP4
+async function convertWebMToMP4(webmBlob) {
+    const file = new File([webmBlob], "video.mp4", { type: "video/mp4" });
+    return file;
+}
 
 // Send video to Flask backend
 function sendVideoToServer(videoBlob) {
     const formData = new FormData();
-    formData.append("video", videoBlob, "video.webm");
+    formData.append("video", videoBlob, "video.mp4");
 
-    const selectedTask = selectTask.value;
-    let endpoint = "/predict/emotion"; // Default
-
-    if (selectedTask === "sign") {
-        endpoint = "/predict/sign";
-    } else if (selectedTask === "both") {
-        endpoint = "/predict/both";
-    }
-
-    fetch(`http://127.0.0.1:5000${endpoint}`, {
+    fetch(`http://127.0.0.1:5000/predict/${taskType}`, {
         method: "POST",
         body: formData,
     })
     .then((response) => response.json())
     .then((data) => {
+        console.log("✅ Server Response:", data);
         displayResult(data);
     })
     .catch((error) => {
         console.error("❌ Error:", error);
+        resultDiv.innerHTML = `<p style="color: red;">❌ Error processing video. Please try again.</p>`;
     });
 }
 
 // Display predictions
 function displayResult(data) {
-    resultDiv.innerHTML = `<h3>🔹 Prediction Results:</h3><pre>${JSON.stringify(data, null, 2)}</pre>`;
-}
+    let resultHTML = `<h3>🔹 Prediction Results:</h3>`;
 
-// Functions for task selection
-function startSignLanguage() {
-    selectTask.value = "sign";
-    console.log("🔹 Selected: Sign Language");
-}
+    if (taskType === "emotion") {
+        resultHTML += `<p><strong>Emotion:</strong> ${data.emotion ?? "No face detected"}</p>`;
+    } else if (taskType === "sign") {
+        resultHTML += `<p><strong>Left Hand:</strong> ${data.left_hand ?? "No left hand detected"}</p>`;
+        resultHTML += `<p><strong>Right Hand:</strong> ${data.right_hand ?? "No right hand detected"}</p>`;
+    } else if (taskType === "both") {
+        resultHTML += `<p><strong>Emotion:</strong> ${data.emotion ?? "No face detected"}</p>`;
+        resultHTML += `<p><strong>Left Hand:</strong> ${data.left_hand ?? "No left hand detected"}</p>`;
+        resultHTML += `<p><strong>Right Hand:</strong> ${data.right_hand ?? "No right hand detected"}</p>`;
+    }
 
-function startEmotionRecognition() {
-    selectTask.value = "emotion";
-    console.log("🔹 Selected: Emotion Detection");
-}
-
-function startBoth() {
-    selectTask.value = "both";
-    console.log("🔹 Selected: Both");
+    resultDiv.innerHTML = resultHTML;
 }

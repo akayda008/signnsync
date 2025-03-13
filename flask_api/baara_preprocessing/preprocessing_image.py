@@ -1,57 +1,66 @@
 import cv2
 import os
 import numpy as np
+import subprocess
+import sys
 
-def preprocess_images(input_folder, output_folder, frame_size=(128, 128)):
+# Paths
+BASE_PATH = "A:/Softwares/laragon/www/signnsync/interpretation/"
+FRAMES_PATH = os.path.normpath(os.path.join(BASE_PATH, "frames"))
+PREPROCESSED_PATH = os.path.normpath(os.path.join(BASE_PATH, "preprocessed"))
+ROUTES_SCRIPT_PATH = os.path.join(os.path.dirname(__file__), "routes.py")  # Path to routes.py
+
+# Ensure output folders exist
+for subfolder in ["face", "left_hand", "right_hand"]:
+    os.makedirs(os.path.normpath(os.path.join(PREPROCESSED_PATH, subfolder)), exist_ok=True)
+
+def preprocess_images(input_folder, output_folder, frame_size=(64, 64)):
     """
-    Preprocesses images for LSTM/RNN model training.
-    - Resizes frames to a fixed dimension.
-    - Normalizes pixel values.
+    Preprocesses extracted frames for model prediction:
+    - Resizes frames to (64x64)
+    - Normalizes pixel values (0 to 1)
     - Saves preprocessed images in the output folder.
 
-    Args:
-        input_folder (str): Folder containing extracted frames.
-        output_folder (str): Folder where preprocessed images will be saved.
-        frame_size (tuple): Target frame width & height (default: 128x128).
+    :param input_folder: Folder containing extracted frames (face, left_hand, right_hand)
+    :param output_folder: Folder where preprocessed images will be saved
+    :param frame_size: Target frame width & height (default: 64x64)
     """
 
-    os.makedirs(output_folder, exist_ok=True)  # Ensure output folder exists
+    if not os.path.exists(input_folder) or not os.listdir(input_folder):
+        print(f"⚠️ No frames found in: {input_folder}")
+        return  # Skip if no images found
 
-    for subfolder in os.listdir(input_folder):
-        subfolder_path = os.path.join(input_folder, subfolder)
-        if os.path.isdir(subfolder_path):  # Only process subdirectories (e.g., face_1, face_2, ...)
-            output_subfolder = os.path.join(output_folder, subfolder)
-            os.makedirs(output_subfolder, exist_ok=True)
+    processed_count = 0
 
-            for image_file in os.listdir(subfolder_path):
-                if image_file.endswith((".png", ".jpg", ".jpeg")):
-                    input_image_path = os.path.join(subfolder_path, image_file)
-                    output_image_path = os.path.join(output_subfolder, image_file)
+    for image_file in sorted(os.listdir(input_folder)):  # Ensure sorted order
+        if image_file.endswith((".png", ".jpg", ".jpeg")):
+            input_image_path = os.path.normpath(os.path.join(input_folder, image_file))
+            output_image_path = os.path.normpath(os.path.join(output_folder, image_file))
 
-                    # Load, resize, and normalize image
-                    image = cv2.imread(input_image_path)
-                    if image is None:
-                        print(f"Skipping corrupted file: {input_image_path}")
-                        continue
+            # Load image
+            image = cv2.imread(input_image_path)
+            if image is None:
+                print(f"⚠️ Skipping corrupted file: {input_image_path}")
+                continue
 
-                    image = cv2.resize(image, frame_size)  # Resize
-                    image = image / 255.0  # Normalize pixel values
+            # Resize and normalize
+            image = cv2.resize(image, frame_size)  # Resize to 64x64
+            image = image.astype(np.float32) / 255.0  # Normalize pixel values (0-1)
 
-                    # Convert back to uint8 for saving
-                    image_uint8 = (image * 255).astype(np.uint8)
-                    cv2.imwrite(output_image_path, image_uint8)
+            # Convert back to uint8 for saving
+            image_uint8 = (image * 255).astype(np.uint8)
+            cv2.imwrite(output_image_path, image_uint8)
+            processed_count += 1
 
-            print(f"Preprocessed images saved in: {output_subfolder}")
+    print(f"✅ {processed_count} images preprocessed and saved in: {output_folder}")
 
-def run_image_preprocessing():
-    """
-    Runs image preprocessing for extracted frames of face, left hand, and right hand.
-    """
-    base_input_folder = r"A:/Christ/Academics/CIA/CS Project/Data/ISL/Trust/Frames_trust"
-    base_output_folder = r"A:/Christ/Academics/CIA/CS Project/Data/ISL/Trust/Preprocessed_trust"
+# Process face images
+preprocess_images(os.path.normpath(os.path.join(FRAMES_PATH, "face")), os.path.normpath(os.path.join(PREPROCESSED_PATH, "face")))
 
-    preprocess_images(os.path.join(base_input_folder, "frame_trust_face"), os.path.join(base_output_folder, "preprocessed_trust_face"))
-    preprocess_images(os.path.join(base_input_folder, "frame_trust_left"), os.path.join(base_output_folder, "preprocessed_trust_left"))
-    preprocess_images(os.path.join(base_input_folder, "frame_trust_right"), os.path.join(base_output_folder, "preprocessed_trust_right"))
+# Process left-hand images
+preprocess_images(os.path.normpath(os.path.join(FRAMES_PATH, "left_hand")), os.path.normpath(os.path.join(PREPROCESSED_PATH, "left_hand")))
 
-    print("All images preprocessed successfully!")
+# Process right-hand images
+preprocess_images(os.path.normpath(os.path.join(FRAMES_PATH, "right_hand")), os.path.normpath(os.path.join(PREPROCESSED_PATH, "right_hand")))
+
+print("✅ All images preprocessed successfully!")
