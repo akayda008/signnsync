@@ -34,8 +34,6 @@ def clear_old_data():
 
             for subfolder in ["face", "left_hand", "right_hand"]:
                 os.makedirs(os.path.join(folder, subfolder), exist_ok=True)
-
-        print("✅ Old data cleared successfully.")
     except Exception as e:
         print(f"⚠️ Error clearing old data: {e}")
 
@@ -67,11 +65,9 @@ def process_video(video_path):
                 preprocess_images(frame_folder, output_folder)
                 preprocessed_paths[key] = output_folder
 
-        print("✅ Video processing completed successfully.")
         return preprocessed_paths
 
     except Exception as e:
-        print(f"⚠️ Error processing video: {e}")
         return {"error": str(e)}
 
 # ==========================
@@ -93,19 +89,14 @@ def run_prediction_script(script_name):
         )
 
         if result.returncode != 0:
-            print(f"⚠️ Error in {script_name}: {result.stderr.strip()}")
             return {"error": f"⚠️ Error in {script_name}: {result.stderr.strip()}"}
 
         try:
-            output = json.loads(result.stdout.strip())
-            print(f"✅ {script_name} Output: {output}")
-            return output
+            return json.loads(result.stdout.strip())
         except json.JSONDecodeError:
-            print(f"⚠️ Invalid JSON output from {script_name}: {result.stdout.strip()}")
             return {"error": f"⚠️ Invalid JSON output from {script_name}: {result.stdout.strip()}"}
 
     except Exception as e:
-        print(f"⚠️ Exception running {script_name}: {str(e)}")
         return {"error": f"⚠️ Exception running {script_name}: {str(e)}"}
 
 # ==========================
@@ -129,7 +120,7 @@ def predict_emotion_route():
         process_video(test_path)
         emotion_result = run_prediction_script("emotion_prediction.py")
 
-        return jsonify({"emotion": emotion_result.get("emotion", "No face detected")})
+        return jsonify(emotion_result)
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -155,10 +146,7 @@ def predict_sign_route():
         process_video(test_path)
         sign_result = run_prediction_script("sign_prediction.py")
 
-        return jsonify({
-            "left_hand": sign_result.get("left_hand", "No left hand detected"),
-            "right_hand": sign_result.get("right_hand", "No right hand detected")
-        })
+        return jsonify(sign_result)
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -188,9 +176,8 @@ def predict_both_route():
         sign_result = run_prediction_script("sign_prediction.py")
 
         return jsonify({
-            "emotion": emotion_result.get("emotion", "No face detected"),
-            "left_hand": sign_result.get("left_hand", "No left hand detected"),
-            "right_hand": sign_result.get("right_hand", "No right hand detected")
+            "emotion_prediction_output": emotion_result,
+            "sign_prediction_output": sign_result
         })
 
     except Exception as e:

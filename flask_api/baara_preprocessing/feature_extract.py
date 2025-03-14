@@ -3,6 +3,7 @@ import cv2
 import mediapipe as mp
 import subprocess  # For calling frame.py
 import sys
+import time
 import numpy as np  # For creating blank frames
 
 # Ensure frame.py is in the same directory or adjust the path
@@ -58,6 +59,8 @@ def extract_features(input_video_path, output_folder):
     mp_holistic = mp.solutions.holistic
     with mp_holistic.Holistic(min_detection_confidence=0.5, min_tracking_confidence=0.5) as holistic:
         frame_count = 0
+        start_time = time.time()
+
         while cap.isOpened():
             ret, frame = cap.read()
             if not ret:
@@ -125,6 +128,12 @@ def extract_features(input_video_path, output_folder):
             right_hand_output.write(right_hand_frame)
             left_hand_output.write(left_hand_frame)
 
+            # ⏳ Maintain original frame duration
+            elapsed_time = time.time() - start_time
+            expected_time = frame_count / fps
+            if elapsed_time < expected_time:
+                time.sleep(expected_time - elapsed_time)
+
     # Release everything
     cap.release()
     face_output.release()
@@ -132,12 +141,6 @@ def extract_features(input_video_path, output_folder):
     left_hand_output.release()
 
     print(f"✅ Feature extraction complete: Face ({detected_features['face']} frames), Right Hand ({detected_features['right_hand']} frames), Left Hand ({detected_features['left_hand']} frames).")
-
-    # Validate extracted videos before calling frame.py
-    for vid in [face_video_path, right_hand_video_path, left_hand_video_path]:
-        if not os.path.exists(vid) or os.path.getsize(vid) == 0:
-            print(f"⚠️ Warning: Extracted video {vid} is empty or missing.")
-            return
 
     # Call frame.py to process extracted videos
     print("🚀 Calling frame.py for frame extraction...")

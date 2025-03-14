@@ -41,17 +41,18 @@ def predict_emotion():
     input_folder = r"A:/Softwares/laragon/www/signnsync/interpretation/preprocessed"
     face_folder = os.path.join(input_folder, "face")
 
+    emotion_preds = []
+
+    # ✅ Ensure input folder exists and contains frames
     if not os.path.exists(face_folder) or not os.listdir(face_folder):
         return json.dumps({"error": "❌ No preprocessed face frames found!"})
 
-    emotion_preds = []
-
     try:
-        # ✅ Process frames in sorted order
-        for img_name in sorted(os.listdir(face_folder)):
+        # ✅ Predict for face frames
+        for img_name in sorted(os.listdir(face_folder)):  # Ensure ordered processing
             img_path = os.path.join(face_folder, img_name)
             img_array = preprocess_image(img_path)
-
+            
             if isinstance(img_array, dict) and "error" in img_array:
                 return json.dumps(img_array)  # Return JSON error if preprocessing fails
 
@@ -70,13 +71,10 @@ def predict_emotion():
         final_emotion_pred = max(set(emotion_preds), key=emotion_preds.count)
 
         # ✅ Class labels (Modify this if needed)
-        class_labels = ["Angry", "Disgust", "Happy", "Trust", "Surprised", "Fear", "Sad", "Hope", "Neutral"]
+        class_labels = ["Angry", "Anticipation", "Disgust", "Fear", "Happy", "Neutral", "Sad", "Surprised", "Trust"]
 
         # ✅ Determine final prediction text
-        if 0 <= final_emotion_pred < len(class_labels):
-            prediction_text = class_labels[final_emotion_pred]
-        else:
-            prediction_text = "❌ Unknown emotion detected."
+        prediction_text = class_labels[final_emotion_pred]
 
         return json.dumps({"emotion_prediction": prediction_text})
 
